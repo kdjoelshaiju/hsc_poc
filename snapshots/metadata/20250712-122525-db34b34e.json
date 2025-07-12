@@ -1,0 +1,16 @@
+{
+  "snapshot_id": "20250712-122525-db34b34e",
+  "timestamp": "2025-07-12T12:25:25.315888",
+  "description": "Manifold learning for 6 programs",
+  "version": "1.0",
+  "components": [
+    "manifold"
+  ],
+  "size_bytes": 1810,
+  "checksum": "e15ebb4a2a04a8fd1efd1c76a599da99",
+  "tags": [
+    "manifold",
+    "learning"
+  ],
+  "parent_snapshot": null
+}

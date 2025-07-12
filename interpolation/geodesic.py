@@ -6,9 +6,8 @@ in the learned semantic manifold.
 """
 
 import numpy as np
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
-import json
 
 from embedding.engine import DSLToVectorEngine
 
@@ -59,8 +58,12 @@ class GeodesicInterpolator:
         if engine is None:
             engine = DSLToVectorEngine()
         
-        start_embedding = engine.encode_program(start_program)
-        end_embedding = engine.encode_program(end_program)
+        start_result = engine.encode_program(start_program)
+        end_result = engine.encode_program(end_program)
+        
+        # Extract vectors from results
+        start_embedding = start_result.vector
+        end_embedding = end_result.vector
         
         # Interpolate in embedding space
         interpolated_embeddings = self._interpolate_embeddings(
@@ -169,8 +172,12 @@ class GeodesicInterpolator:
         if engine is None:
             engine = DSLToVectorEngine()
         
-        start_embedding = engine.encode_program(start_program)
-        end_embedding = engine.encode_program(end_program)
+        start_result = engine.encode_program(start_program)
+        end_result = engine.encode_program(end_program)
+        
+        # Extract vectors from results
+        start_embedding = start_result.vector
+        end_embedding = end_result.vector
         
         # Compute path metrics
         euclidean_distance = np.linalg.norm(end_embedding - start_embedding)
@@ -262,7 +269,7 @@ class GeodesicInterpolator:
             coherence = (start_overlap + end_overlap) / 2
             coherence_scores.append(coherence)
         
-        return np.mean(coherence_scores)
+        return float(np.mean(coherence_scores))
     
     def _extract_keywords(self, program: str) -> List[str]:
         """Extract keywords from a program."""

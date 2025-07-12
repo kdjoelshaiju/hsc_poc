@@ -6,7 +6,7 @@ for visualizing and analyzing program embedding manifolds.
 """
 
 import numpy as np
-from typing import Optional, Tuple, Dict, Any, Literal
+from typing import Optional, Literal
 from dataclasses import dataclass
 import json
 
@@ -81,7 +81,7 @@ class DimensionalityReducer:
         # In a full implementation, this would use scikit-learn's TSNE
         
         # Compute pairwise distances
-        distances = self._compute_distances(embeddings)
+        # distances = self._compute_distances(embeddings)
         
         # Simple approximation: use PCA as initialization and add some noise
         self._fit_pca(embeddings)

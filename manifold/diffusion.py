@@ -6,7 +6,7 @@ manifold structure of program embeddings.
 """
 
 import numpy as np
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional
 from dataclasses import dataclass
 import json
 

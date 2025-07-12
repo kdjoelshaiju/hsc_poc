@@ -1,0 +1,17 @@
+{
+  "snapshot_id": "20250712-122327-46d10772",
+  "timestamp": "2025-07-12T12:23:27.617080",
+  "description": "Initial demo state",
+  "version": "1.0",
+  "components": [
+    "embeddings"
+  ],
+  "size_bytes": 2299,
+  "checksum": "30ee66595796b10159002d42d7dbcd19",
+  "tags": [
+    "demo",
+    "initial",
+    "hackathon"
+  ],
+  "parent_snapshot": null
+}

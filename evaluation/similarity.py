@@ -6,9 +6,8 @@ programs and interpolation quality.
 """
 
 import numpy as np
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Optional
 from dataclasses import dataclass
-import json
 
 from embedding.engine import DSLToVectorEngine
 
@@ -50,8 +49,12 @@ class SimilarityEvaluator:
             engine = DSLToVectorEngine()
         
         # Encode programs
-        embedding1 = engine.encode_program(program1)
-        embedding2 = engine.encode_program(program2)
+        result1 = engine.encode_program(program1)
+        result2 = engine.encode_program(program2)
+        
+        # Extract vectors from results
+        embedding1 = result1.vector
+        embedding2 = result2.vector
         
         metrics = {}
         
@@ -98,9 +101,14 @@ class SimilarityEvaluator:
             return {'smoothness': 0.0, 'semantic_coherence': 0.0, 'overall_quality': 0.0}
         
         # Encode all programs
-        start_embedding = engine.encode_program(start_program)
-        end_embedding = engine.encode_program(end_program)
-        interpolated_embeddings = [engine.encode_program(p) for p in interpolated_programs]
+        start_result = engine.encode_program(start_program)
+        end_result = engine.encode_program(end_program)
+        interpolated_results = [engine.encode_program(p) for p in interpolated_programs]
+        
+        # Extract vectors from results
+        start_embedding = start_result.vector
+        end_embedding = end_result.vector
+        interpolated_embeddings = [result.vector for result in interpolated_results]
         
         metrics = {}
         
@@ -206,7 +214,7 @@ class SimilarityEvaluator:
         if 'semantic_overlap' in metrics:
             scores.append(metrics['semantic_overlap'])
         
-        return np.mean(scores) if scores else 0.0
+        return float(np.mean(scores)) if scores else 0.0
     
     def _compute_interpolation_smoothness(self, embeddings: List[np.ndarray]) -> float:
         """Compute smoothness of interpolation path."""
@@ -219,19 +227,13 @@ class SimilarityEvaluator:
             dist = np.linalg.norm(embeddings[i] - embeddings[i-1])
             distances.append(dist)
         
-        # Smoothness is inversely related to variance in distances
+        # Smoothness is inversely proportional to variance of distances
         if not distances:
             return 1.0
         
-        mean_distance = np.mean(distances)
-        if mean_distance == 0:
-            return 1.0
-        
-        # Coefficient of variation (lower is smoother)
-        cv = np.std(distances) / mean_distance
-        smoothness = max(0, 1 - cv)
-        
-        return smoothness
+        variance = float(np.var(distances))
+        smoothness = 1.0 / (1.0 + variance)
+        return float(smoothness)
     
     def _compute_semantic_coherence(self, programs: List[str], 
                                    start_program: str, end_program: str) -> float:
@@ -255,37 +257,31 @@ class SimilarityEvaluator:
             coherence = (start_overlap + end_overlap) / 2
             coherence_scores.append(coherence)
         
-        return np.mean(coherence_scores)
+        return float(np.mean(coherence_scores))
     
     def _compute_path_consistency(self, start_embedding: np.ndarray, 
                                  end_embedding: np.ndarray,
                                  interpolated_embeddings: List[np.ndarray]) -> float:
         """Compute how well the interpolation path follows the manifold."""
         if not interpolated_embeddings:
-            return 0.0
-        
-        # Compute the ideal linear path
-        ideal_path = []
-        alphas = np.linspace(0, 1, len(interpolated_embeddings))
-        for alpha in alphas:
-            ideal_point = (1 - alpha) * start_embedding + alpha * end_embedding
-            ideal_path.append(ideal_point)
-        
-        # Compute deviation from ideal path
-        deviations = []
-        for actual, ideal in zip(interpolated_embeddings, ideal_path):
-            deviation = np.linalg.norm(actual - ideal)
-            deviations.append(deviation)
-        
-        # Path consistency is inversely related to average deviation
-        mean_deviation = np.mean(deviations)
-        max_possible_deviation = np.linalg.norm(end_embedding - start_embedding)
-        
-        if max_possible_deviation == 0:
             return 1.0
         
-        consistency = max(0, 1 - mean_deviation / max_possible_deviation)
-        return consistency
+        # Compute total path length
+        total_path_length = 0.0
+        for i in range(1, len(interpolated_embeddings)):
+            dist = np.linalg.norm(interpolated_embeddings[i] - interpolated_embeddings[i-1])
+            total_path_length += dist
+        
+        # Compute direct distance
+        direct_distance = np.linalg.norm(end_embedding - start_embedding)
+        
+        # Path consistency is inversely proportional to path length ratio
+        if direct_distance == 0:
+            return 1.0
+        
+        path_ratio = float(total_path_length / direct_distance)
+        consistency = 1.0 / max(1.0, path_ratio)
+        return float(consistency)
     
     def _compute_overall_quality(self, metrics: Dict[str, float]) -> float:
         """Compute overall quality score from interpolation metrics."""

@@ -3,7 +3,7 @@ Tests for the interpolation module.
 """
 
 import unittest
-from interpolation.geodesic import GeodesicInterpolator, InterpolationConfig
+from interpolation.geodesic import GeodesicInterpolator
 from manifold.autoencoder import AutoencoderManifold
 
 

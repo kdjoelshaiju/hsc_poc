@@ -17,13 +17,13 @@ import argparse
 import sys
 import logging
 from pathlib import Path
+import numpy as np
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from embedding.engine import DSLToVectorEngine, EmbeddingConfig
 from manifold.autoencoder import AutoencoderManifold
-from manifold.diffusion import DiffusionMaps
 from interpolation.geodesic import GeodesicInterpolator
 from evaluation.similarity import SimilarityEvaluator
 from visualization.plotter import HSCVisualizer
@@ -57,18 +57,36 @@ def run_demo():
     program_codes = list(examples.values())
     program_names = list(examples.keys())
     
-    embeddings = engine.encode_batch([(code, name) for code, name in zip(program_codes, program_names)])
+    # Encode programs individually
+    embeddings = []
+    for code, name in zip(program_codes, program_names):
+        result = engine.encode_program(code, name)
+        embeddings.append(result.vector)
+    
+    embeddings = np.array(embeddings)
     print(f"   Encoded {len(embeddings)} programs into {embeddings.shape[1]}-dimensional vectors")
     
     # Compute similarities
     print("\n3. Computing semantic similarities...")
-    similarity_matrix = engine.get_similarity_matrix(program_codes)
     
     # Find similar programs
     query_program = examples["square"]
-    similar_programs = engine.find_most_similar(query_program, program_codes, top_k=3)
+    engine.encode_program(query_program, "query")
     
-    print(f"\n   Most similar to 'square':")
+    # Get program IDs for similarity computation
+    query_id = "query"
+    
+    similarities = []
+    for i, name in enumerate(program_names):
+        if name in engine.embeddings:
+            similarity = engine.compute_similarity(query_id, name)
+            similarities.append((i, similarity))
+    
+    # Sort by similarity
+    similarities.sort(key=lambda x: x[1], reverse=True)
+    similar_programs = similarities[:3]
+    
+    print("\n   Most similar to 'square':")
     for idx, similarity in similar_programs:
         print(f"   - {program_names[idx]}: {similarity:.3f}")
     
@@ -90,15 +108,17 @@ def run_demo():
         start_program, end_program, steps=5, engine=engine
     )
     
-    print(f"   Interpolated between 'square' and 'factorial' in 5 steps")
+    print("   Interpolated between 'square' and 'factorial' in 5 steps")
     
     # Evaluate results
     print("\n7. Evaluating interpolation quality...")
     evaluator = SimilarityEvaluator()
-    quality_score = evaluator.evaluate_interpolation(
+    quality_metrics = evaluator.evaluate_interpolation(
         start_program, end_program, interpolated_programs, engine
     )
-    print(f"   Interpolation quality score: {quality_score:.3f}")
+    print(f"   Interpolation quality score: {quality_metrics['overall_quality']:.3f}")
+    print(f"   Smoothness: {quality_metrics['smoothness']:.3f}")
+    print(f"   Semantic coherence: {quality_metrics['semantic_coherence']:.3f}")
     
     # Visualization
     print("\n8. Creating visualizations...")
@@ -139,8 +159,8 @@ def run_interactive():
                     continue
                 program_name = command[1]
                 if program_name in examples:
-                    embedding = engine.encode_program(examples[program_name])
-                    print(f"Encoded '{program_name}' into {len(embedding)}-dimensional vector")
+                    result = engine.encode_program(examples[program_name])
+                    print(f"Encoded '{program_name}' into {len(result.vector)}-dimensional vector")
                 else:
                     print(f"Unknown program: {program_name}")
             elif cmd == "similar":
@@ -150,10 +170,22 @@ def run_interactive():
                 program_name = command[1]
                 k = int(command[2])
                 if program_name in examples:
-                    similar = engine.find_most_similar(examples[program_name], list(examples.values()), top_k=k)
+                    # Encode the query program
+                    engine.encode_program(examples[program_name], "query")
+                    
+                    # Find similar programs
+                    similarities = []
+                    for name in examples.keys():
+                        if name in engine.embeddings and name != "query":
+                            similarity = engine.compute_similarity("query", name)
+                            similarities.append((name, similarity))
+                    
+                    # Sort and take top k
+                    similarities.sort(key=lambda x: x[1], reverse=True)
+                    similar = similarities[:k]
+                    
                     print(f"Most similar to '{program_name}':")
-                    for idx, similarity in similar:
-                        name = list(examples.keys())[idx]
+                    for name, similarity in similar:
                         print(f"  {name}: {similarity:.3f}")
                 else:
                     print(f"Unknown program: {program_name}")

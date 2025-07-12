@@ -1,0 +1,17 @@
+{
+  "snapshot_id": "20250712-122525-26233b2a",
+  "timestamp": "2025-07-12T12:25:25.335111",
+  "description": "Demo branch with modifications",
+  "version": "1.0",
+  "components": [
+    "embeddings"
+  ],
+  "size_bytes": 2299,
+  "checksum": "2eb315501d5bff5372378b34945c88e6",
+  "tags": [
+    "demo",
+    "branch",
+    "modified"
+  ],
+  "parent_snapshot": null
+}

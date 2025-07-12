@@ -6,7 +6,7 @@ including embedding plots, manifold visualization, and interpolation paths.
 """
 
 import numpy as np
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Tuple
 from dataclasses import dataclass
 import json
 
