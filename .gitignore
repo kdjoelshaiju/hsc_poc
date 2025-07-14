@@ -159,4 +159,8 @@ Thumbs.db
 *.tmp
 *.temp
 temp/
-tmp/ 
+tmp/
+
+# HSC Snapshots (large files)
+snapshots/
+demo_outputs/ 
